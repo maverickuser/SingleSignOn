@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:jaxrs="http://cxf.apache.org/jaxrs"
+  xsi:schemaLocation="
+http://www.springframework.org/schema/beans
+http://www.springframework.org/schema/beans/spring-beans.xsd
+http://cxf.apache.org/jaxrs
+http://cxf.apache.org/schemas/jaxrs.xsd">
+
+  <!-- do not use import statements if CXFServlet init parameters link to this beans.xml --> 
+
+  <import resource="classpath:META-INF/cxf/cxf.xml" />
+  <import resource="classpath:META-INF/cxf/cxf-servlet.xml" />
+
+  <jaxrs:server id="customerService" address="/">
+    <jaxrs:serviceBeans>
+      <ref bean="customerBean" />
+    </jaxrs:serviceBeans>
+    <jaxrs:providers>
+          <ref bean="ssoRedirectPOST"/>
+          <ref bean="samlRequestFormCreator"/> 
+     </jaxrs:providers>
+  </jaxrs:server>
+  
+  <jaxrs:server address="/racs"> 
+   <jaxrs:serviceBeans>
+       <ref bean="consumerService"/> 
+   </jaxrs:serviceBeans>
+</jaxrs:server>
+
+  <bean id="customerBean" class="demo.jaxrs.server.CustomerService" />
+  
+  <bean id="consumerService" class="org.apache.cxf.rs.security.saml.sso.RequestAssertionConsumerService">
+        <property name="stateProvider" ref="stateManager"/>
+        <property name="supportBase64Encoding" value="true"/>
+		<property name="supportDeflateEncoding" value="false"/>
+		<property name="signaturePropertiesFile" value="assertion.properties"/>
+        
+        
+</bean>
+
+  
+<bean id="ssoRedirectPOST" class="org.apache.cxf.rs.security.saml.sso.SamlPostBindingFilter">
+        <property name="idpServiceAddress" value="http://localhost:8080/opensso/SSOPOST/metaAlias/idp"/>
+        <property name="assertionConsumerServiceAddress" value="/racs/sso"/>
+        <property name="stateProvider" ref="stateManager"/>
+        <property name="useDeflateEncoding" value="false"/>
+</bean>
+
+<bean id="samlRequestFormCreator" class="org.apache.cxf.jaxrs.provider.RequestDispatcherProvider">
+      <property name="dispatcherName" value="jsp"/>
+      <!--<property name="resourcePath" value="/WEB-INF/SamlTest.jsp"/>-->
+      <property name="logRedirects" value="true"/>
+      <property name="useClassNames" value="true"/>
+      
+</bean>
+
+
+<bean id="stateManager" class="org.apache.cxf.rs.security.saml.sso.state.EHCacheSPStateManager">
+    <constructor-arg ref="cxf"/>
+</bean>
+
+
+
+</beans>
